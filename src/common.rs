@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fmt};
+use std::{borrow::Cow, collections::BTreeMap, fmt};
 
 use combine::easy::{Error, Info};
 use combine::{choice, many, many1, optional, position, StdParseResult};
@@ -58,7 +58,7 @@ pub enum Value<'a, T: Text<'a>> {
     Variable(T::Value),
     Int(Number),
     Float(f64),
-    String(String),
+    String(Cow<'a, str>),
     Boolean(bool),
     Null,
     Enum(T::Value),
@@ -72,7 +72,7 @@ impl<'a, T: Text<'a>> Value<'a, T> {
             Self::Variable(v) => Value::Variable(v.as_ref().into()),
             Self::Int(i) => Value::Int(i.clone()),
             Self::Float(f) => Value::Float(*f),
-            Self::String(s) => Value::String(s.clone()),
+            Self::String(s) => Value::String(Cow::Owned(s.to_string())),
             Self::Boolean(b) => Value::Boolean(*b),
             Self::Null => Value::Null,
             Self::Enum(v) => Value::Enum(v.as_ref().into()),
@@ -103,6 +103,12 @@ impl Number {
 impl From<i32> for Number {
     fn from(i: i32) -> Self {
         Number(i as i64)
+    }
+}
+
+impl From<i64> for Number {
+    fn from(i: i64) -> Self {
+        Number(i)
     }
 }
 
@@ -171,7 +177,7 @@ where
         .into_result()
 }
 
-fn unquote_block_string(src: &str) -> Result<String, Error<Token<'_>, Token<'_>>> {
+fn unquote_block_string(src: &str) -> Result<Cow<str>, Error<Token<'_>, Token<'_>>> {
     debug_assert!(src.starts_with("\"\"\"") && src.ends_with("\"\"\""));
     let indent = src[3..src.len() - 3]
         .lines()
@@ -206,13 +212,15 @@ fn unquote_block_string(src: &str) -> Result<String, Error<Token<'_>, Token<'_>>
     if result[last_line..].trim().is_empty() {
         result.truncate(last_line);
     }
-
-    Ok(result)
+    Ok(Cow::Owned(result))
 }
 
-fn unquote_string(s: &str) -> Result<String, Error<Token, Token>> {
-    let mut res = String::with_capacity(s.len());
+fn unquote_string(s: &str) -> Result<Cow<str>, Error<Token, Token>> {
     debug_assert!(s.starts_with('"') && s.ends_with('"'));
+    if !s.contains('\\') {
+        return Ok(Cow::Borrowed(&s[1..s.len() - 1]));
+    }
+    let mut res = String::with_capacity(s.len());
     let mut chars = s[1..s.len() - 1].chars();
     let mut temp_code_point = String::with_capacity(4);
     while let Some(c) = chars.next() {
@@ -267,10 +275,10 @@ fn unquote_string(s: &str) -> Result<String, Error<Token, Token>> {
         }
     }
 
-    Ok(res)
+    Ok(Cow::Owned(res))
 }
 
-pub fn string<'a>(input: &mut TokenStream<'a>) -> StdParseResult<String, TokenStream<'a>> {
+pub fn string<'a>(input: &mut TokenStream<'a>) -> StdParseResult<Cow<'a, str>, TokenStream<'a>> {
     choice((
         kind(T::StringValue).and_then(|tok| unquote_string(tok.value)),
         kind(T::BlockString).and_then(|tok| unquote_block_string(tok.value)),

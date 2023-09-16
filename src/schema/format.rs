@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{borrow::Cow, fmt};
 
 use crate::common::Text;
 use crate::format::{format_directives, Displayable, Formatter, Style};
@@ -24,7 +24,7 @@ fn to_string<T: Displayable>(v: &T) -> String {
     formatter.into_string()
 }
 
-fn description(description: &Option<String>, f: &mut Formatter) {
+fn description(description: &Option<Cow<str>>, f: &mut Formatter) {
     if let Some(ref descr) = *description {
         f.indent();
         f.write_quoted(descr.as_ref());
