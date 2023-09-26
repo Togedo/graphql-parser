@@ -86,6 +86,12 @@ impl<'a, T: Text<'a>> Value<'a, T> {
     }
 }
 
+impl<'v, T: Clone + Text<'v>> From<&Value<'v, T>> for Value<'v, T> {
+    fn from(value: &Value<'v, T>) -> Self {
+        value.clone()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type<'a, T: Text<'a>> {
     NamedType(T::Value),
