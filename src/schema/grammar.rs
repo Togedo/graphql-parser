@@ -154,7 +154,7 @@ where
 {
     (
         position(),
-        optional(parser(string)),
+        optional(parser(string::<X>)),
         name::<'a, X>(),
         punct(":").with(parser(parse_type)),
         optional(punct("=").with(parser(default_value))),
@@ -192,7 +192,7 @@ where
 {
     (
         position(),
-        optional(parser(string)),
+        optional(parser(string::<S>)),
         name::<'a, S>(),
         parser(arguments_definition),
         punct(":").with(parser(parse_type)),
@@ -425,7 +425,7 @@ where
         .with(many1(
             (
                 position(),
-                optional(parser(string)),
+                optional(parser(string::<T>)),
                 name::<'a, T>(),
                 parser(directives),
             )
@@ -614,7 +614,7 @@ where
 {
     use self::TypeDefinition::*;
     (
-        optional(parser(string)),
+        optional(parser(string::<T>)),
         choice((
             choice((
                 parser(scalar_type).map(Scalar),

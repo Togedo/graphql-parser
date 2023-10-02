@@ -1,4 +1,4 @@
-use std::{borrow::Cow, str::FromStr};
+use std::str::FromStr;
 
 use thiserror::Error;
 
@@ -72,7 +72,7 @@ pub enum TypeExtension<'a, T: Text<'a>> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScalarType<'a, T: Text<'a>> {
     pub position: Pos,
-    pub description: Option<Cow<'a, str>>,
+    pub description: Option<T::Value>,
     pub name: T::Value,
     pub directives: Vec<Directive<'a, T>>,
 }
@@ -114,7 +114,7 @@ where
 #[derive(Debug, Clone, PartialEq)]
 pub struct ObjectType<'a, T: Text<'a>> {
     pub position: Pos,
-    pub description: Option<Cow<'a, str>>,
+    pub description: Option<T::Value>,
     pub name: T::Value,
     pub implements_interfaces: Vec<T::Value>,
     pub directives: Vec<Directive<'a, T>>,
@@ -164,7 +164,7 @@ where
 #[derive(Debug, Clone, PartialEq)]
 pub struct Field<'a, T: Text<'a>> {
     pub position: Pos,
-    pub description: Option<Cow<'a, str>>,
+    pub description: Option<T::Value>,
     pub name: T::Value,
     pub arguments: Vec<InputValue<'a, T>>,
     pub field_type: Type<'a, T>,
@@ -174,7 +174,7 @@ pub struct Field<'a, T: Text<'a>> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct InputValue<'a, T: Text<'a>> {
     pub position: Pos,
-    pub description: Option<Cow<'a, str>>,
+    pub description: Option<T::Value>,
     pub name: T::Value,
     pub value_type: Type<'a, T>,
     pub default_value: Option<Value<'a, T>>,
@@ -184,7 +184,7 @@ pub struct InputValue<'a, T: Text<'a>> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct InterfaceType<'a, T: Text<'a>> {
     pub position: Pos,
-    pub description: Option<Cow<'a, str>>,
+    pub description: Option<T::Value>,
     pub name: T::Value,
     pub implements_interfaces: Vec<T::Value>,
     pub directives: Vec<Directive<'a, T>>,
@@ -234,7 +234,7 @@ where
 #[derive(Debug, Clone, PartialEq)]
 pub struct UnionType<'a, T: Text<'a>> {
     pub position: Pos,
-    pub description: Option<Cow<'a, str>>,
+    pub description: Option<T::Value>,
     pub name: T::Value,
     pub directives: Vec<Directive<'a, T>>,
     pub types: Vec<T::Value>,
@@ -280,7 +280,7 @@ where
 #[derive(Debug, Clone, PartialEq)]
 pub struct EnumType<'a, T: Text<'a>> {
     pub position: Pos,
-    pub description: Option<Cow<'a, str>>,
+    pub description: Option<T::Value>,
     pub name: T::Value,
     pub directives: Vec<Directive<'a, T>>,
     pub values: Vec<EnumValue<'a, T>>,
@@ -304,7 +304,7 @@ where
 #[derive(Debug, Clone, PartialEq)]
 pub struct EnumValue<'a, T: Text<'a>> {
     pub position: Pos,
-    pub description: Option<Cow<'a, str>>,
+    pub description: Option<T::Value>,
     pub name: T::Value,
     pub directives: Vec<Directive<'a, T>>,
 }
@@ -348,7 +348,7 @@ where
 #[derive(Debug, Clone, PartialEq)]
 pub struct InputObjectType<'a, T: Text<'a>> {
     pub position: Pos,
-    pub description: Option<Cow<'a, str>>,
+    pub description: Option<T::Value>,
     pub name: T::Value,
     pub directives: Vec<Directive<'a, T>>,
     pub fields: Vec<InputValue<'a, T>>,
@@ -420,7 +420,7 @@ pub enum DirectiveLocation {
 #[derive(Debug, Clone, PartialEq)]
 pub struct DirectiveDefinition<'a, T: Text<'a>> {
     pub position: Pos,
-    pub description: Option<Cow<'a, str>>,
+    pub description: Option<T::Value>,
     pub name: T::Value,
     pub arguments: Vec<InputValue<'a, T>>,
     pub repeatable: bool,

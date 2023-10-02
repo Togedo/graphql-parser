@@ -1,3 +1,5 @@
+use std::fmt::Display;
+use std::hash::Hash;
 use std::{borrow::Cow, collections::BTreeMap, fmt};
 
 use combine::easy::{Error, Info};
@@ -19,20 +21,36 @@ pub trait Text<'a>: 'a {
         + Eq
         + PartialOrd
         + Ord
+        + Display
         + fmt::Debug
-        + Clone;
+        + Clone
+        + Hash;
+
+    fn from_string(string: &String) -> Self::Value;
 }
 
-impl<'a> Text<'a> for &'a str {
-    type Value = Self;
-}
+// impl<'a> Text<'a> for &'a str {
+//     type Value = Self;
+
+//     fn from_string<'b>(string: &'b String) -> Self::Value {
+//         string
+//     }
+// }
 
 impl<'a> Text<'a> for String {
     type Value = String;
+
+    fn from_string(string: &String) -> Self::Value {
+        string.clone()
+    }
 }
 
 impl<'a> Text<'a> for std::borrow::Cow<'a, str> {
     type Value = Self;
+
+    fn from_string(string: &String) -> Self::Value {
+        Cow::Owned(string.clone())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -58,7 +76,7 @@ pub enum Value<'a, T: Text<'a>> {
     Variable(T::Value),
     Int(Number),
     Float(f64),
-    String(Cow<'a, str>),
+    String(T::Value),
     Boolean(bool),
     Null,
     Enum(T::Value),
@@ -72,7 +90,7 @@ impl<'a, T: Text<'a>> Value<'a, T> {
             Self::Variable(v) => Value::Variable(v.as_ref().into()),
             Self::Int(i) => Value::Int(i.clone()),
             Self::Float(f) => Value::Float(*f),
-            Self::String(s) => Value::String(Cow::Owned(s.to_string())),
+            Self::String(s) => Value::String(s.as_ref().to_string()),
             Self::Boolean(b) => Value::Boolean(*b),
             Self::Null => Value::Null,
             Self::Enum(v) => Value::Enum(v.as_ref().into()),
@@ -183,7 +201,9 @@ where
         .into_result()
 }
 
-fn unquote_block_string(src: &str) -> Result<Cow<str>, Error<Token<'_>, Token<'_>>> {
+fn unquote_block_string<'a, T: Text<'a>>(
+    src: &'a str,
+) -> Result<T::Value, Error<Token<'_>, Token<'_>>> {
     debug_assert!(src.starts_with("\"\"\"") && src.ends_with("\"\"\""));
     let indent = src[3..src.len() - 3]
         .lines()
@@ -218,13 +238,13 @@ fn unquote_block_string(src: &str) -> Result<Cow<str>, Error<Token<'_>, Token<'_
     if result[last_line..].trim().is_empty() {
         result.truncate(last_line);
     }
-    Ok(Cow::Owned(result))
+    Ok(T::from_string(&result))
 }
 
-fn unquote_string(s: &str) -> Result<Cow<str>, Error<Token, Token>> {
+fn unquote_string<'a, S: Text<'a>>(s: &'a str) -> Result<S::Value, Error<Token, Token>> {
     debug_assert!(s.starts_with('"') && s.ends_with('"'));
     if !s.contains('\\') {
-        return Ok(Cow::Borrowed(&s[1..s.len() - 1]));
+        return Ok(S::Value::from(&s[1..s.len() - 1]));
     }
     let mut res = String::with_capacity(s.len());
     let mut chars = s[1..s.len() - 1].chars();
@@ -281,13 +301,15 @@ fn unquote_string(s: &str) -> Result<Cow<str>, Error<Token, Token>> {
         }
     }
 
-    Ok(Cow::Owned(res))
+    Ok(S::from_string(&res))
 }
 
-pub fn string<'a>(input: &mut TokenStream<'a>) -> StdParseResult<Cow<'a, str>, TokenStream<'a>> {
+pub fn string<'a, S: Text<'a>>(
+    input: &mut TokenStream<'a>,
+) -> StdParseResult<S::Value, TokenStream<'a>> {
     choice((
-        kind(T::StringValue).and_then(|tok| unquote_string(tok.value)),
-        kind(T::BlockString).and_then(|tok| unquote_block_string(tok.value)),
+        kind(T::StringValue).and_then(|tok| unquote_string::<S>(tok.value)),
+        kind(T::BlockString).and_then(|tok| unquote_block_string::<S>(tok.value)),
     ))
     .parse_stream(input)
     .into_result()
@@ -300,7 +322,7 @@ where
     S: Text<'a>,
 {
     kind(T::StringValue)
-        .and_then(|tok| unquote_string(tok.value))
+        .and_then(|tok| unquote_string::<S>(tok.value))
         .map(Value::String)
         .parse_stream(input)
         .into_result()
@@ -313,7 +335,7 @@ where
     S: Text<'a>,
 {
     kind(T::BlockString)
-        .and_then(|tok| unquote_block_string(tok.value))
+        .and_then(|tok| unquote_block_string::<S>(tok.value))
         .map(Value::String)
         .parse_stream(input)
         .into_result()
@@ -423,16 +445,32 @@ mod tests {
 
     #[test]
     fn unquote_unicode_string() {
+        use std::borrow::Cow;
         // basic tests
-        assert_eq!(unquote_string(r#""\u0009""#).expect(""), "\u{0009}");
-        assert_eq!(unquote_string(r#""\u000A""#).expect(""), "\u{000A}");
-        assert_eq!(unquote_string(r#""\u000D""#).expect(""), "\u{000D}");
-        assert_eq!(unquote_string(r#""\u0020""#).expect(""), "\u{0020}");
-        assert_eq!(unquote_string(r#""\uFFFF""#).expect(""), "\u{FFFF}");
+        assert_eq!(
+            unquote_string::<Cow<str>>(r#""\u0009""#).expect(""),
+            "\u{0009}"
+        );
+        assert_eq!(
+            unquote_string::<Cow<str>>(r#""\u000A""#).expect(""),
+            "\u{000A}"
+        );
+        assert_eq!(
+            unquote_string::<Cow<str>>(r#""\u000D""#).expect(""),
+            "\u{000D}"
+        );
+        assert_eq!(
+            unquote_string::<Cow<str>>(r#""\u0020""#).expect(""),
+            "\u{0020}"
+        );
+        assert_eq!(
+            unquote_string::<Cow<str>>(r#""\uFFFF""#).expect(""),
+            "\u{FFFF}"
+        );
 
         // a more complex string
         assert_eq!(
-            unquote_string(r#""\u0009 hello \u000A there""#).expect(""),
+            unquote_string::<Cow<str>>(r#""\u0009 hello \u000A there""#).expect(""),
             "\u{0009} hello \u{000A} there"
         );
     }

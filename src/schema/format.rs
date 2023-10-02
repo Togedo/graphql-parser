@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fmt};
+use std::fmt;
 
 use crate::common::Text;
 use crate::format::{format_directives, Displayable, Formatter, Style};
@@ -24,7 +24,7 @@ fn to_string<T: Displayable>(v: &T) -> String {
     formatter.into_string()
 }
 
-fn description(description: &Option<Cow<str>>, f: &mut Formatter) {
+fn description<'a, T: Text<'a>>(description: &Option<T::Value>, f: &mut Formatter) {
     if let Some(ref descr) = *description {
         f.indent();
         f.write_quoted(descr.as_ref());
@@ -111,7 +111,7 @@ where
     T: Text<'a>,
 {
     fn display(&self, f: &mut Formatter) {
-        description(&self.description, f);
+        description::<T>(&self.description, f);
         f.indent();
         f.write("scalar ");
         f.write(self.name.as_ref());
@@ -154,7 +154,7 @@ where
     T: Text<'a>,
 {
     fn display(&self, f: &mut Formatter) {
-        description(&self.description, f);
+        description::<T>(&self.description, f);
         f.indent();
         f.write("type ");
         f.write(self.name.as_ref());
@@ -232,7 +232,7 @@ where
     T: Text<'a>,
 {
     fn display(&self, f: &mut Formatter) {
-        description(&self.description, f);
+        description::<T>(&self.description, f);
         f.indent();
         f.write(self.name.as_ref());
         format_arguments(&self.arguments, f);
@@ -248,7 +248,7 @@ where
     T: Text<'a>,
 {
     fn display(&self, f: &mut Formatter) {
-        description(&self.description, f);
+        description::<T>(&self.description, f);
         f.indent();
         f.write("interface ");
         f.write(self.name.as_ref());
@@ -291,7 +291,7 @@ where
     T: Text<'a>,
 {
     fn display(&self, f: &mut Formatter) {
-        description(&self.description, f);
+        description::<T>(&self.description, f);
         f.indent();
         f.write("union ");
         f.write(self.name.as_ref());
@@ -334,7 +334,7 @@ where
     T: Text<'a>,
 {
     fn display(&self, f: &mut Formatter) {
-        description(&self.description, f);
+        description::<T>(&self.description, f);
         f.indent();
         f.write("enum ");
         f.write(self.name.as_ref());
@@ -411,7 +411,7 @@ where
     T: Text<'a>,
 {
     fn display(&self, f: &mut Formatter) {
-        description(&self.description, f);
+        description::<T>(&self.description, f);
         f.indent();
         f.write("input ");
         f.write(self.name.as_ref());
@@ -454,7 +454,7 @@ where
     T: Text<'a>,
 {
     fn display(&self, f: &mut Formatter) {
-        description(&self.description, f);
+        description::<T>(&self.description, f);
         f.indent();
         f.write("directive @");
         f.write(self.name.as_ref());

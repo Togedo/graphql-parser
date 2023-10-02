@@ -412,7 +412,7 @@ mod test {
             "]".repeat(25),
             "}".repeat(30)
         );
-        let result = parse_query::<&str>(&query);
+        let result = parse_query::<std::borrow::Cow<str>>(&query);
         let err = format!("{}", result.unwrap_err());
         assert_eq!(
             &err,

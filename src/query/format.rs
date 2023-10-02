@@ -295,7 +295,7 @@ where
             }
             Value::Int(ref num) => f.write(&format!("{}", num.0)),
             Value::Float(val) => f.write(&format!("{}", val)),
-            Value::String(ref val) => f.write_quoted(val),
+            Value::String(ref val) => f.write_quoted(val.as_ref()),
             Value::Boolean(true) => f.write("true"),
             Value::Boolean(false) => f.write("false"),
             Value::Null => f.write("null"),
