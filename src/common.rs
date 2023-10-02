@@ -26,31 +26,19 @@ pub trait Text<'a>: 'a {
         + Clone
         + Hash;
 
-    fn from_string(string: &String) -> Self::Value;
+    // fn from_string(string: &String) -> Self::Value;
 }
 
-// impl<'a> Text<'a> for &'a str {
-//     type Value = Self;
-
-//     fn from_string<'b>(string: &'b String) -> Self::Value {
-//         string
-//     }
-// }
+impl<'a> Text<'a> for &'a str {
+    type Value = Self;
+}
 
 impl<'a> Text<'a> for String {
     type Value = String;
-
-    fn from_string(string: &String) -> Self::Value {
-        string.clone()
-    }
 }
 
 impl<'a> Text<'a> for std::borrow::Cow<'a, str> {
     type Value = Self;
-
-    fn from_string(string: &String) -> Self::Value {
-        Cow::Owned(string.clone())
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -238,7 +226,7 @@ fn unquote_block_string<'a, T: Text<'a>>(
     if result[last_line..].trim().is_empty() {
         result.truncate(last_line);
     }
-    Ok(T::from_string(&result))
+    Ok(result.into())
 }
 
 fn unquote_string<'a, S: Text<'a>>(s: &'a str) -> Result<S::Value, Error<Token, Token>> {
