@@ -240,7 +240,7 @@ fn unquote_block_string<'a, T: Text<'a>>(
     if result[last_line..].trim().is_empty() {
         result.truncate(last_line);
     }
-    Ok(result.into())
+    Ok(T::from_string(&result))
 }
 
 fn unquote_string<'a, S: Text<'a>>(s: &'a str) -> Result<S::Value, Error<Token, Token>> {
