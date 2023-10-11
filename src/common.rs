@@ -1,10 +1,12 @@
+use std::borrow::Cow;
 use std::fmt::Display;
 use std::hash::Hash;
-use std::{borrow::Cow, collections::BTreeMap, fmt};
+use std::{collections::BTreeMap, fmt};
 
 use combine::easy::{Error, Info};
 use combine::{choice, many, many1, optional, position, StdParseResult};
 use combine::{parser, Parser};
+use serde::{Deserialize, Serialize};
 
 use crate::helpers::{ident, kind, name, punct};
 use crate::position::Pos;
@@ -26,19 +28,31 @@ pub trait Text<'a>: 'a {
         + Clone
         + Hash;
 
-    // fn from_string(string: &String) -> Self::Value;
+    fn from_string(string: &String) -> Self::Value;
 }
 
-impl<'a> Text<'a> for &'a str {
+impl Text<'static> for &'static str {
     type Value = Self;
+
+    fn from_string(string: &String) -> Self::Value {
+        Box::leak(string.clone().into_boxed_str())
+    }
 }
 
 impl<'a> Text<'a> for String {
     type Value = String;
+
+    fn from_string(string: &String) -> Self::Value {
+        string.clone()
+    }
 }
 
 impl<'a> Text<'a> for std::borrow::Cow<'a, str> {
     type Value = Self;
+
+    fn from_string(string: &String) -> Self::Value {
+        Cow::Owned(string.clone())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -54,12 +68,12 @@ pub struct Directive<'a, T: Text<'a>> {
 /// (only in implemetation), we do a trick similar to the one
 /// in `serde_json`: encapsulate value in new-type, allowing type
 /// to be extended later.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
 // we use i64 as a reference implementation: graphql-js thinks even 32bit
 // integers is enough. We might consider lift this limit later though
 pub struct Number(pub(crate) i64);
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 pub enum Value<'a, T: Text<'a>> {
     Variable(T::Value),
     Int(Number),
@@ -288,7 +302,6 @@ fn unquote_string<'a, S: Text<'a>>(s: &'a str) -> Result<S::Value, Error<Token, 
             c => res.push(c),
         }
     }
-
     Ok(S::from_string(&res))
 }
 
