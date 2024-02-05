@@ -148,7 +148,7 @@ where
         position()
             .skip(punct("@"))
             .and(name::<'a, T>())
-            .and(parser(arguments))
+            .and(parser(arguments::<T, Vec<(T::Value, Value<'a, T>)>>))
             .map(|((position, name), arguments)| Directive {
                 position,
                 name,
@@ -160,9 +160,13 @@ where
 }
 
 #[allow(clippy::type_complexity)]
-pub fn arguments<'a, T>(
+pub fn arguments<'a, T, A: Default + Extend<(<T as Text<'a>>::Value, Value<'a, T>)>>(
     input: &mut TokenStream<'a>,
-) -> StdParseResult<Vec<(T::Value, Value<'a, T>)>, TokenStream<'a>>
+) -> StdParseResult<
+    // Vec<(T::Value, Value<'a, T>)>
+    A,
+    TokenStream<'a>,
+>
 where
     T: Text<'a>,
 {

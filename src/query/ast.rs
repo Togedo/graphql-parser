@@ -5,19 +5,19 @@
 //!
 //! [graphql grammar]: http://facebook.github.io/graphql/October2016/#sec-Appendix-Grammar-Summary
 //!
+pub use crate::common::{Directive, Number, Text, Type, Value};
 use crate::position::Pos;
-pub use crate::common::{Directive, Number, Value, Text, Type};
 
 /// Root of query data
 #[derive(Debug, Clone, PartialEq)]
-pub struct Document<'a, T: Text<'a>> {
-    pub definitions: Vec<Definition<'a, T>>,
+pub struct Document<'a, T: Text<'a>, A = Vec<(<T as Text<'a>>::Value, Value<'a, T>)>> {
+    pub definitions: Vec<Definition<'a, T, A>>,
 }
 
 impl<'a> Document<'a, String> {
     pub fn into_static(self) -> Document<'static, String> {
         // To support both reference and owned values in the AST,
-        // all string data is represented with the ::common::Str<'a, T: Text<'a>> 
+        // all string data is represented with the ::common::Str<'a, T: Text<'a>>
         // wrapper type.
         // This type must carry the lifetime of the query string,
         // and is stored in a PhantomData value on the Str type.
@@ -34,59 +34,59 @@ impl<'a> Document<'a, String> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Definition<'a, T: Text<'a>> {
-    Operation(OperationDefinition<'a, T>),
-    Fragment(FragmentDefinition<'a, T>),
+pub enum Definition<'a, T: Text<'a>, A = Vec<(<T as Text<'a>>::Value, Value<'a, T>)>> {
+    Operation(OperationDefinition<'a, T, A>),
+    Fragment(FragmentDefinition<'a, T, A>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct FragmentDefinition<'a, T: Text<'a>> {
+pub struct FragmentDefinition<'a, T: Text<'a>, A = Vec<(<T as Text<'a>>::Value, Value<'a, T>)>> {
     pub position: Pos,
     pub name: T::Value,
     pub type_condition: TypeCondition<'a, T>,
     pub directives: Vec<Directive<'a, T>>,
-    pub selection_set: SelectionSet<'a, T>,
+    pub selection_set: SelectionSet<'a, T, A>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum OperationDefinition<'a, T: Text<'a>> {
-    SelectionSet(SelectionSet<'a, T>),
-    Query(Query<'a, T>),
-    Mutation(Mutation<'a, T>),
-    Subscription(Subscription<'a, T>),
+pub enum OperationDefinition<'a, T: Text<'a>, A = Vec<(<T as Text<'a>>::Value, Value<'a, T>)>> {
+    SelectionSet(SelectionSet<'a, T, A>),
+    Query(Query<'a, T, A>),
+    Mutation(Mutation<'a, T, A>),
+    Subscription(Subscription<'a, T, A>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Query<'a, T: Text<'a>> {
+pub struct Query<'a, T: Text<'a>, A = Vec<(<T as Text<'a>>::Value, Value<'a, T>)>> {
     pub position: Pos,
     pub name: Option<T::Value>,
     pub variable_definitions: Vec<VariableDefinition<'a, T>>,
     pub directives: Vec<Directive<'a, T>>,
-    pub selection_set: SelectionSet<'a, T>,
+    pub selection_set: SelectionSet<'a, T, A>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Mutation<'a, T: Text<'a>> {
+pub struct Mutation<'a, T: Text<'a>, A = Vec<(<T as Text<'a>>::Value, Value<'a, T>)>> {
     pub position: Pos,
     pub name: Option<T::Value>,
     pub variable_definitions: Vec<VariableDefinition<'a, T>>,
     pub directives: Vec<Directive<'a, T>>,
-    pub selection_set: SelectionSet<'a, T>,
+    pub selection_set: SelectionSet<'a, T, A>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Subscription<'a, T: Text<'a>> {
+pub struct Subscription<'a, T: Text<'a>, A = Vec<(<T as Text<'a>>::Value, Value<'a, T>)>> {
     pub position: Pos,
     pub name: Option<T::Value>,
     pub variable_definitions: Vec<VariableDefinition<'a, T>>,
     pub directives: Vec<Directive<'a, T>>,
-    pub selection_set: SelectionSet<'a, T>,
+    pub selection_set: SelectionSet<'a, T, A>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct SelectionSet<'a, T: Text<'a>> {
+pub struct SelectionSet<'a, T: Text<'a>, A = Vec<(<T as Text<'a>>::Value, Value<'a, T>)>> {
     pub span: (Pos, Pos),
-    pub items: Vec<Selection<'a, T>>,
+    pub items: Vec<Selection<'a, T, A>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -98,20 +98,20 @@ pub struct VariableDefinition<'a, T: Text<'a>> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Selection<'a, T: Text<'a>> {
-    Field(Field<'a, T>),
+pub enum Selection<'a, T: Text<'a>, A = Vec<(<T as Text<'a>>::Value, Value<'a, T>)>> {
+    Field(Field<'a, T, A>),
     FragmentSpread(FragmentSpread<'a, T>),
-    InlineFragment(InlineFragment<'a, T>),
+    InlineFragment(InlineFragment<'a, T, A>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Field<'a, T: Text<'a>> {
+pub struct Field<'a, T: Text<'a>, A = Vec<(<T as Text<'a>>::Value, Value<'a, T>)>> {
     pub position: Pos,
     pub alias: Option<T::Value>,
     pub name: T::Value,
-    pub arguments: Vec<(T::Value, Value<'a, T>)>,
+    pub arguments: A,
     pub directives: Vec<Directive<'a, T>>,
-    pub selection_set: SelectionSet<'a, T>,
+    pub selection_set: SelectionSet<'a, T, A>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -127,9 +127,9 @@ pub enum TypeCondition<'a, T: Text<'a>> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct InlineFragment<'a, T: Text<'a>> {
+pub struct InlineFragment<'a, T: Text<'a>, A = Vec<(<T as Text<'a>>::Value, Value<'a, T>)>> {
     pub position: Pos,
     pub type_condition: Option<TypeCondition<'a, T>>,
     pub directives: Vec<Directive<'a, T>>,
-    pub selection_set: SelectionSet<'a, T>,
+    pub selection_set: SelectionSet<'a, T, A>,
 }

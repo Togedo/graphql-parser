@@ -8,7 +8,9 @@ use crate::query::ast::*;
 use crate::query::error::ParseError;
 use crate::tokenizer::TokenStream;
 
-pub fn field<'a, S>(input: &mut TokenStream<'a>) -> StdParseResult<Field<'a, S>, TokenStream<'a>>
+pub fn field<'a, S, A: Default + Extend<(<S as Text<'a>>::Value, Value<'a, S>)>>(
+    input: &mut TokenStream<'a>,
+) -> StdParseResult<Field<'a, S, A>, TokenStream<'a>>
 where
     S: Text<'a>,
 {
@@ -43,9 +45,9 @@ where
         .into_result()
 }
 
-pub fn selection<'a, S>(
+pub fn selection<'a, S, A: Default + Extend<(<S as Text<'a>>::Value, Value<'a, S>)>>(
     input: &mut TokenStream<'a>,
-) -> StdParseResult<Selection<'a, S>, TokenStream<'a>>
+) -> StdParseResult<Selection<'a, S, A>, TokenStream<'a>>
 where
     S: Text<'a>,
 {
@@ -79,9 +81,9 @@ where
         .into_result()
 }
 
-pub fn selection_set<'a, S>(
+pub fn selection_set<'a, S, A: Default + Extend<(<S as Text<'a>>::Value, Value<'a, S>)>>(
     input: &mut TokenStream<'a>,
-) -> StdParseResult<SelectionSet<'a, S>, TokenStream<'a>>
+) -> StdParseResult<SelectionSet<'a, S, A>, TokenStream<'a>>
 where
     S: Text<'a>,
 {
@@ -98,9 +100,9 @@ where
         .into_result()
 }
 
-pub fn query<'a, T: Text<'a>>(
+pub fn query<'a, T: Text<'a>, A: Default + Extend<(<T as Text<'a>>::Value, Value<'a, T>)>>(
     input: &mut TokenStream<'a>,
-) -> StdParseResult<Query<'a, T>, TokenStream<'a>>
+) -> StdParseResult<Query<'a, T, A>, TokenStream<'a>>
 where
     T: Text<'a>,
 {
@@ -122,16 +124,20 @@ where
 
 /// A set of attributes common to a Query and a Mutation
 #[allow(type_alias_bounds)]
-type OperationCommon<'a, T: Text<'a>> = (
+type OperationCommon<'a, T: Text<'a>, A: Default + Extend<(<T as Text<'a>>::Value, Value<'a, T>)>> = (
     Option<T::Value>,
     Vec<VariableDefinition<'a, T>>,
     Vec<Directive<'a, T>>,
-    SelectionSet<'a, T>,
+    SelectionSet<'a, T, A>,
 );
 
-pub fn operation_common<'a, T: Text<'a>>(
+pub fn operation_common<
+    'a,
+    T: Text<'a>,
+    A: Default + Extend<(<T as Text<'a>>::Value, Value<'a, T>)>,
+>(
     input: &mut TokenStream<'a>,
-) -> StdParseResult<OperationCommon<'a, T>, TokenStream<'a>>
+) -> StdParseResult<OperationCommon<'a, T, A>, TokenStream<'a>>
 where
     T: Text<'a>,
 {
@@ -166,9 +172,9 @@ where
         .into_result()
 }
 
-pub fn mutation<'a, T: Text<'a>>(
+pub fn mutation<'a, T: Text<'a>, A: Default + Extend<(<T as Text<'a>>::Value, Value<'a, T>)>>(
     input: &mut TokenStream<'a>,
-) -> StdParseResult<Mutation<'a, T>, TokenStream<'a>>
+) -> StdParseResult<Mutation<'a, T, A>, TokenStream<'a>>
 where
     T: Text<'a>,
 {
@@ -188,9 +194,9 @@ where
         .into_result()
 }
 
-pub fn subscription<'a, T: Text<'a>>(
+pub fn subscription<'a, T: Text<'a>, A: Default + Extend<(<T as Text<'a>>::Value, Value<'a, T>)>>(
     input: &mut TokenStream<'a>,
-) -> StdParseResult<Subscription<'a, T>, TokenStream<'a>>
+) -> StdParseResult<Subscription<'a, T, A>, TokenStream<'a>>
 where
     T: Text<'a>,
 {
@@ -210,9 +216,9 @@ where
         .into_result()
 }
 
-pub fn operation_definition<'a, S>(
+pub fn operation_definition<'a, S, A: Default + Extend<(<S as Text<'a>>::Value, Value<'a, S>)>>(
     input: &mut TokenStream<'a>,
-) -> StdParseResult<OperationDefinition<'a, S>, TokenStream<'a>>
+) -> StdParseResult<OperationDefinition<'a, S, A>, TokenStream<'a>>
 where
     S: Text<'a>,
 {
@@ -225,9 +231,13 @@ where
         .into_result()
 }
 
-pub fn fragment_definition<'a, T: Text<'a>>(
+pub fn fragment_definition<
+    'a,
+    T: Text<'a>,
+    A: Default + Extend<(<T as Text<'a>>::Value, Value<'a, T>)>,
+>(
     input: &mut TokenStream<'a>,
-) -> StdParseResult<FragmentDefinition<'a, T>, TokenStream<'a>>
+) -> StdParseResult<FragmentDefinition<'a, T, A>, TokenStream<'a>>
 where
     T: Text<'a>,
 {
@@ -251,9 +261,9 @@ where
         .into_result()
 }
 
-pub fn definition<'a, S>(
+pub fn definition<'a, S, A: Default + Extend<(<S as Text<'a>>::Value, Value<'a, S>)>>(
     input: &mut TokenStream<'a>,
-) -> StdParseResult<Definition<'a, S>, TokenStream<'a>>
+) -> StdParseResult<Definition<'a, S, A>, TokenStream<'a>>
 where
     S: Text<'a>,
 {
@@ -265,7 +275,9 @@ where
 }
 
 /// Parses a piece of query language and returns an AST
-pub fn parse_query<'a, S>(s: &'a str) -> Result<Document<'a, S>, ParseError>
+pub fn parse_query<'a, S, A: Default + Extend<(<S as Text<'a>>::Value, Value<'a, S>)>>(
+    s: &'a str,
+) -> Result<Document<'a, S, A>, ParseError>
 where
     S: Text<'a>,
 {
