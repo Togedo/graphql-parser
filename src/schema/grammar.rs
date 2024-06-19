@@ -4,7 +4,7 @@ use combine::sep_by1;
 use combine::{choice, eof, many, many1, optional, position};
 use combine::{parser, Parser, StdParseResult};
 
-use crate::common::{default_value, directives, parse_type, string, Text};
+use crate::common::{default_value, directives, parse_type, string};
 use crate::helpers::{ident, kind, name, punct};
 use crate::schema::ast::*;
 use crate::schema::error::ParseError;

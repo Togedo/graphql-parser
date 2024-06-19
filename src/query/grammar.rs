@@ -1,7 +1,6 @@
 use combine::{eof, many1, optional, position, StdParseResult};
 use combine::{parser, Parser};
 
-use crate::common::Directive;
 use crate::common::{arguments, default_value, directives, parse_type};
 use crate::helpers::{ident, name, punct};
 use crate::query::ast::*;
